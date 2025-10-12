@@ -6,22 +6,43 @@
   <title>Unity Web Player | My project</title>
   <style>
     html,body { height:100%; margin:0; background:#000; overflow:hidden; }
-    /* Fit 16:9 inside the visible viewport */
+    /* Canvas fits viewport, 16:9 letterboxed */
     #unity-canvas{
-      width:  min(100dvw, calc(100dvh * 16/9)) !important;
-      height: min(100dvh, calc(100dvw * 9/16)) !important;
-      display:block; position:fixed; inset:0; margin:auto;
-      background:#231f20;
+      width:min(100dvw, calc(100dvh*16/9)) !important;
+      height:min(100dvh, calc(100dvw*9/16)) !important;
+      display:block; position:fixed; inset:0; margin:auto; background:#231f20;
     }
+    /* Loader overlay */
+    #loader {
+      position:fixed; inset:0; background:#0b0b0b; display:grid; place-items:center; z-index:10;
+      font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color:#e6e6e6;
+    }
+    .card { text-align:center; padding:16px 20px; width:min(90vw, 340px); }
+    .bar { height:10px; background:#1e1e1e; border-radius:999px; overflow:hidden; }
+    .fill { height:100%; width:0%; transition:width .2s; }
+    .title { margin:0 0 12px 0; font-size:14px; opacity:.9; }
+    .pct { margin-top:8px; font-size:12px; opacity:.8; }
   </style>
 </head>
 <body>
-  <!-- remove width/height attributes -->
+  <div id="loader">
+    <div class="card">
+      <p class="title">Loading…</p>
+      <div class="bar"><div class="fill" id="fill"></div></div>
+      <div class="pct" id="pct">0%</div>
+    </div>
+  </div>
+
   <canvas id="unity-canvas" tabindex="-1"></canvas>
 
   <script src="Build/docs.loader.js"></script>
   <script>
-    createUnityInstance(document.querySelector("#unity-canvas"), {
+    const canvas = document.querySelector("#unity-canvas");
+    const fill = document.getElementById("fill");
+    const pct  = document.getElementById("pct");
+    const loader = document.getElementById("loader");
+
+    createUnityInstance(canvas, {
       arguments: [],
       dataUrl: "Build/docs.data",
       frameworkUrl: "Build/docs.framework.js",
@@ -30,7 +51,14 @@
       companyName: "DefaultCompany",
       productName: "My project",
       productVersion: "0.1.0"
-      // matchWebGLToCanvasSize remains true (default)
+    }, (progress) => {
+      const p = Math.round(progress * 100);
+      fill.style.width = p + "%";
+      // simple accent color as it fills
+      fill.style.background = `linear-gradient(90deg, #4dc0ff, #2eaadc)`;
+      pct.textContent = p + "%";
+    }).then(() => {
+      loader.style.display = "none";
     }).catch(alert);
   </script>
 </body>
