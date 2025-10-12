@@ -5,24 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Game</title>
   <style>
-    * { box-sizing: border-box; }
-    html, body { height:100%; margin:0; overflow:hidden; background:#0b0b0b; }
-
-    /* centers and constrains without overflow */
+    html,body { margin:0; height:100%; overflow:hidden; background:#000; }
     .page { position:fixed; inset:0; display:grid; place-items:center; }
-    .container {
-      /* keep 16:9; never exceed viewport; no scrollbars */
-      width:  min(100dvw, calc(100dvh * 16/9));
-      height: min(100dvh, calc(100dvw * 9/16));
-      overflow:hidden;
-    }
+    /* contain = full game visible, letterbox if needed */
+    .contain { width:min(100dvw, calc(100dvh*16/9));
+               height:min(100dvh, calc(100dvw*9/16)); overflow:hidden; }
     iframe { width:100%; height:100%; border:0; display:block; }
   </style>
 </head>
 <body>
   <div class="page">
-    <div class="container">
-      <!-- Unity page you renamed from index.html -->
+    <div class="contain">
       <iframe src="./player.html" allow="autoplay; fullscreen"></iframe>
     </div>
   </div>
