@@ -10,14 +10,13 @@
   <style>
     html,body { height:100%; margin:0; overflow:hidden; background:#000; }
     #unity-container { position:fixed; inset:0; display:grid; place-items:center; background:#000; }
-    .fit16x9 { width:min(100dvw, calc(100dvh*16/9)); height:min(100dvh, calc(100dvw*9/16)); }
+    .fit16x9 { width:min(100dvw, calc(100dvh * 16/9)); height:min(100dvh, calc(100dvw * 9/16)); }
     #unity-canvas { width:100% !important; height:100% !important; display:block; background:#231f20; }
   </style>
 </head>
 <body>
   <div id="unity-container" class="unity-desktop">
     <div class="fit16x9">
-      <!-- removed fixed 1920x1080 attributes -->
       <canvas id="unity-canvas" tabindex="-1"></canvas>
     </div>
 
@@ -40,20 +39,23 @@
 
     function unityShowBanner(msg, type) {
       const warningBanner = document.querySelector("#unity-warning");
-      function update() { warningBanner.style.display = warningBanner.children.length ? 'block' : 'none'; }
-      const div = document.createElement('div'); div.innerHTML = msg; warningBanner.appendChild(div);
-      if (type == 'error') div.style = 'background:red;padding:10px;';
-      else { if (type == 'warning') div.style = 'background:yellow;padding:10px;'; setTimeout(() => { warningBanner.removeChild(div); update(); }, 5000); }
+      function update() {
+        warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+      }
+      const div = document.createElement('div');
+      div.innerHTML = msg; warningBanner.appendChild(div);
+      if (type === 'error') div.style = 'background:red;padding:10px;';
+      else { if (type === 'warning') div.style = 'background:yellow;padding:10px;'; setTimeout(() => { warningBanner.removeChild(div); update(); }, 5000); }
       update();
     }
 
-    const buildUrl   = "Build";
-    const loaderUrl  = buildUrl + "/Medi.loader.js";
+    const buildUrl  = "Build";
+    const loaderUrl = buildUrl + "/Medi.loader.js";
     const config = {
       arguments: [],
-      dataUrl:       buildUrl + "/Medi.data",
-      frameworkUrl:  buildUrl + "/Medi.framework.js",
-      codeUrl:       buildUrl + "/Medi.wasm",
+      dataUrl:      buildUrl + "/Medi.data",
+      frameworkUrl: buildUrl + "/Medi.framework.js",
+      codeUrl:      buildUrl + "/Medi.wasm",
       streamingAssetsUrl: "StreamingAssets",
       companyName: "DefaultCompany",
       productName: "My project",
@@ -61,26 +63,22 @@
       showBanner: unityShowBanner
     };
 
-    // Mobile viewport meta + optional DPI tweak
+    // Mobile tweaks
     if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-      const meta = document.createElement('meta');
-      meta.name = 'viewport';
-      meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-      document.head.appendChild(meta);
-      document.querySelector("#unity-container").className = "unity-mobile";
+      document.getElementById("unity-container").className = "unity-mobile";
       // config.devicePixelRatio = 1; // uncomment to lower render resolution on phones
     }
 
-    document.querySelector("#unity-loading-bar").style.display = "block";
+    document.getElementById("unity-loading-bar").style.display = "block";
 
     const script = document.createElement("script");
     script.src = loaderUrl;
     script.onload = () => {
       createUnityInstance(canvas, config, (progress) => {
-        document.querySelector("#unity-progress-bar-full").style.width = (progress * 100) + "%";
+        document.getElementById("unity-progress-bar-full").style.width = (progress * 100) + "%";
       }).then((unityInstance) => {
-        document.querySelector("#unity-loading-bar").style.display = "none";
-        document.querySelector("#unity-fullscreen-button").onclick = () => unityInstance.SetFullscreen(1);
+        document.getElementById("unity-loading-bar").style.display = "none";
+        document.getElementById("unity-fullscreen-button").onclick = () => unityInstance.SetFullscreen(1);
       }).catch((message) => alert(message));
     };
     document.body.appendChild(script);
