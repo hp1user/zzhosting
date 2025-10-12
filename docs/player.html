@@ -3,15 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- viewport tightened to block browser zoom on mobile -->
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <title>Unity Web Player | My project</title>
   <link rel="shortcut icon" href="TemplateData/favicon.ico">
   <link rel="stylesheet" href="TemplateData/style.css">
   <style>
-    html,body{height:100%;margin:0;overflow:hidden;background:#000;}
+    html,body{height:100%;margin:0;overflow:hidden;background:#000;overscroll-behavior:none;}
     #stage{position:fixed;inset:0;display:grid;place-items:center;}
     .fit16x9{width:min(100dvw,calc(100dvh*16/9));height:min(100dvh,calc(100dvw*9/16));}
-    #unity-canvas{width:100% !important;height:100% !important;display:block;background:#231f20;}
+
+    /* Critical: pass touches to Unity and stop browser gestures */
+    #unity-canvas{
+      width:100% !important;height:100% !important;display:block;background:#231f20;
+      touch-action:none;           /* prevent browser panning/zooming */
+      -ms-touch-action:none;
+      user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
+    }
 
     /* Loader overlay */
     #loader{position:fixed;inset:0;display:grid;place-items:center;background:#0b0b0b;z-index:9999;}
@@ -61,15 +69,16 @@
     const fill = document.getElementById("fill");
     const pct  = document.getElementById("pct");
 
-    // mobile meta
-    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-      const m=document.createElement("meta");
-      m.name="viewport";
-      m.content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes";
-      document.head.appendChild(m);
-      // Optional: lower render res on phones
-      // config.devicePixelRatio = 1;
-    }
+    // ensure a strict mobile viewport (update existing tag if present)
+    (function enforceViewport(){
+      const desired = "width=device-width,height=device-height,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover";
+      let m = document.querySelector('meta[name="viewport"]');
+      if (!m) { m = document.createElement("meta"); m.name = "viewport"; document.head.appendChild(m); }
+      m.setAttribute("content", desired);
+    })();
+
+    // Optional: lower render res on phones
+    // if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) config.devicePixelRatio = 1;
 
     // load Unity
     const s=document.createElement("script");
@@ -81,7 +90,10 @@
         pct.textContent=p+"%";
       }).then(()=>{
         loader.style.display="none";
-      }).catch((e)=>{ loader.style.display="none"; alert(e); });
+      }).catch((e)=>{
+        loader.style.display="none";
+        alert(e);
+      });
     };
     document.body.appendChild(s);
   </script>
