@@ -25,6 +25,14 @@
     .fill{height:100%;width:0%}
     .t{margin:0 0 10px 0;font-size:14px;opacity:.9}
     .p{margin-top:8px;font-size:12px;opacity:.8}
+
+    /* Mobile fullscreen button (hidden on desktop) */
+    #fsBtn{
+      position:fixed;right:12px;bottom:12px;z-index:50;
+      padding:10px 14px;border:0;border-radius:12px;background:#1e1e1e;color:#fff;
+      font:600 14px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;opacity:.95;
+    }
+    @media (pointer:fine){ #fsBtn{ display:none; } }
   </style>
 </head>
 <body>
@@ -34,6 +42,7 @@
     </div>
   </div>
 
+  <!-- Simple loader -->
   <div id="loader">
     <div class="card">
       <p class="t">Loading…</p>
@@ -42,30 +51,35 @@
     </div>
   </div>
 
+  <!-- Mobile Fullscreen -->
+  <button id="fsBtn" type="button">Fullscreen</button>
+
   <script>
-    // unity config
+    // Build names: keep base equal to your Product Name from Unity
     const buildUrl  = "Build";
-    const loaderUrl = buildUrl + "/Medi.loader.js";
+    const base      = "Medi";
+    const loaderUrl = `${buildUrl}/${base}.loader.js`;
+
+    // Unity config
     const config = {
       arguments: [],
-      dataUrl:      buildUrl + "/Medi.data",
-      frameworkUrl: buildUrl + "/Medi.framework.js",
-      codeUrl:      buildUrl + "/Medi.wasm",
+      dataUrl:       `${buildUrl}/${base}.data`,
+      frameworkUrl:  `${buildUrl}/${base}.framework.js`,
+      codeUrl:       `${buildUrl}/${base}.wasm`,
       streamingAssetsUrl: "StreamingAssets",
       companyName: "DefaultCompany",
       productName: "My project",
       productVersion: "0.1.0",
       matchWebGLToCanvasSize: true
-      // devicePixelRatio: 1, // uncomment to lower render res on phones
     };
 
-    // progress UI refs
     const canvas = document.getElementById("unity-canvas");
     const loader = document.getElementById("loader");
-    const fill = document.getElementById("fill");
-    const pct  = document.getElementById("pct");
+    const fill   = document.getElementById("fill");
+    const pct    = document.getElementById("pct");
+    const fsBtn  = document.getElementById("fsBtn");
 
-    // Strict viewport (in case host overrides later)
+    // Enforce viewport (some hosts inject their own)
     (function enforceViewport(){
       const desired="width=device-width,height=device-height,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover";
       let m=document.querySelector('meta[name="viewport"]');
@@ -73,30 +87,35 @@
       m.setAttribute("content",desired);
     })();
 
-    // ANDROID HARD BLOCKS: stop browser from stealing gestures
+    // Lower render resolution on phones to save perf/heat
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      config.devicePixelRatio = Math.min(1, window.devicePixelRatio || 1); // set to 0.75 if you need more speed
+    }
+
+    // Pass touches to Unity (avoid browser gestures)
     (function passTouchesToUnity(){
       const el = canvas;
-
-      // Prevent default on touch events using non-passive listeners
       ["touchstart","touchmove","touchend","touchcancel"].forEach(t=>{
         el.addEventListener(t, e => { e.preventDefault(); }, { passive:false });
       });
-
-      // Capture pointer so move/ups stay on canvas even if finger leaves bounds
       el.addEventListener("pointerdown", e => {
         try { el.setPointerCapture(e.pointerId); } catch(_) {}
       }, { passive:true });
-
-      // Extra safety against double-tap zoom or browser gestures on some Android shells
       document.addEventListener("gesturestart", e => e.preventDefault(), { passive:false });
       document.addEventListener("gesturechange", e => e.preventDefault(), { passive:false });
       document.addEventListener("gestureend", e => e.preventDefault(), { passive:false });
-
-      // Optional: block page scroll if any wheel events occur
       document.addEventListener("wheel", e => e.preventDefault(), { passive:false });
     })();
 
-    // load Unity
+    // Fullscreen (must be user-initiated on mobile)
+    async function enterFullscreen(){
+      const el = document.documentElement; // or canvas
+      if (el.requestFullscreen) await el.requestFullscreen();
+    }
+    fsBtn.addEventListener("click", enterFullscreen);
+
+    // Load Unity + hook progress → hide loader when ready
     const s=document.createElement("script");
     s.src=loaderUrl;
     s.onload=() => {

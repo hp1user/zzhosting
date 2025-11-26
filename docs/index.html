@@ -7,7 +7,6 @@
   <style>
     html,body { margin:0; height:100%; overflow:hidden; background:#000; }
     .page { position:fixed; inset:0; display:grid; place-items:center; }
-    /* contain = full game visible, letterbox if needed */
     .contain { width:min(100dvw, calc(100dvh*16/9));
                height:min(100dvh, calc(100dvw*9/16)); overflow:hidden; }
     iframe { width:100%; height:100%; border:0; display:block; }
@@ -16,7 +15,7 @@
 <body>
   <div class="page">
     <div class="contain">
-      <iframe src="./player.html" allow="autoplay; fullscreen"></iframe>
+      <iframe src="./player.html?v=10" allow="autoplay; fullscreen" allowfullscreen></iframe>
     </div>
   </div>
 </body>
