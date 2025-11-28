@@ -57,6 +57,15 @@
   <button id="fsBtn" type="button">Enter Fullscreen</button>
 
   <script>
+    // Hide the Fullscreen button on iOS (since it does not work)
+    (function(){
+      const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
+      if (isIOS) {
+        const btn = document.getElementById('fsBtn');
+        if(btn) btn.style.display = 'none';
+      }
+    })();
+
     // Fullscreen toggle (works in top page; in iframe it works on Android/Desktop)
     (function setupFullscreen(){
       const btn = document.getElementById('fsBtn');

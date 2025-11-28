@@ -21,6 +21,10 @@
       padding:10px 14px; border:0; border-radius:12px; background:#1e1e1e; color:#fff;
       font:600 14px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; opacity:.95;
     }
+    #iosTip {
+      display:none; text-align:center; color:white; margin:12px; font-size:16px;
+      position: fixed; left: 0; right: 0; bottom: 56px; z-index: 51;
+    }
   </style>
 </head>
 <body>
@@ -32,13 +36,16 @@
   </div>
 
   <!-- iOS: user chooses to open top page (no iframe) -->
-  <button id="openIOS" type="button">Open Fullscreen (iOS)</button>
+  <div id="iosTip">For best experience on iPhone, tap below to open full page:</div>
+  <button id="openIOS" type="button">Open in Full Page (iOS)</button>
   <script>
     const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
     if (isIOS) {
-      const b = document.getElementById('openIOS');
-      b.style.display = 'block';
-      b.onclick = () => location.href = './player.html?iosfs=1&v=fsB1'; // cache-bust as needed
+      document.getElementById('openIOS').style.display = 'block';
+      document.getElementById('iosTip').style.display = 'block';
+      document.getElementById('openIOS').onclick = () => {
+        location.href = './player.html?iosfs=1&v=fsB1';
+      };
     }
   </script>
 </body>
