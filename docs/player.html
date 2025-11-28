@@ -10,7 +10,9 @@
   <link rel="stylesheet" href="TemplateData/style.css">
   <style>
     html,body{height:100%;margin:0;overflow:hidden;background:#000;overscroll-behavior:none;touch-action:none;}
-    #stage{position:fixed;inset:0;display:grid;place-items:center;touch-action:none;}
+    #stage{position:fixed;inset:0;display:grid;place-items:center;touch-action:none;
+           padding: env(safe-area-inset-top) env(safe-area-inset-right)
+                    env(safe-area-inset-bottom) env(safe-area-inset-left);}
     .fit16x9{width:min(100dvw,calc(100dvh*16/9));height:min(100dvh,calc(100dvw*9/16));touch-action:none;}
     #unity-canvas{
       width:100% !important;height:100% !important;display:block;background:#231f20;
@@ -18,7 +20,7 @@
     }
     *{-webkit-tap-highlight-color:transparent}
 
-    /* Your existing loader */
+    /* Loader (your existing style) */
     #loader{position:fixed;inset:0;display:grid;place-items:center;background:#0b0b0b;z-index:9999;}
     .card{width:min(90vw,360px);padding:16px 18px;text-align:center;
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#e6e6e6;}
@@ -27,7 +29,7 @@
     .t{margin:0 0 10px 0;font-size:14px;opacity:.9}
     .p{margin-top:8px;font-size:12px;opacity:.8}
 
-    /* Fullscreen button (works on Android/Desktop; also on iOS because page is top-level after redirect) */
+    /* Fullscreen toggle */
     #fsBtn{
       position:fixed; right:12px; bottom:12px; z-index:50;
       padding:10px 14px; border:0; border-radius:12px; background:#1e1e1e; color:#fff;
@@ -42,7 +44,7 @@
     </div>
   </div>
 
-  <!-- Loader (kept) -->
+  <!-- Loader -->
   <div id="loader">
     <div class="card">
       <p class="t">Loading…</p>
@@ -55,7 +57,7 @@
   <button id="fsBtn" type="button">Enter Fullscreen</button>
 
   <script>
-    // ---- Fullscreen toggle ----
+    // Fullscreen toggle (works in top page; in iframe it works on Android/Desktop)
     (function setupFullscreen(){
       const btn = document.getElementById('fsBtn');
       const inFS = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
@@ -79,7 +81,7 @@
       update();
     })();
 
-    // ---- Unity config (kept) ----
+    // Unity config
     const buildUrl  = "Build";
     const loaderUrl = buildUrl + "/Medi.loader.js";
     const config = {
@@ -92,24 +94,12 @@
       productName: "My project",
       productVersion: "0.1.0",
       matchWebGLToCanvasSize: true
-      // devicePixelRatio: 1, // leave commented to preserve your prior iOS perf
+      // No DPR overrides; preserves your earlier iOS performance
     };
 
-    // Progress + anti-gesture (as in your current file)
-    const canvas = document.getElementById("unity-canvas");
-    const loader = document.getElementById("loader");
-    const fill = document.getElementById("fill");
-    const pct  = document.getElementById("pct");
-
-    (function enforceViewport(){
-      const desired="width=device-width,height=device-height,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover";
-      let m=document.querySelector('meta[name="viewport"]');
-      if(!m){m=document.createElement("meta");m.name="viewport";document.head.appendChild(m);}
-      m.setAttribute("content",desired);
-    })();
-
+    // Keep input focused on canvas; prevent page gestures interfering
     (function passTouchesToUnity(){
-      const el = canvas;
+      const el = document.getElementById("unity-canvas");
       ["touchstart","touchmove","touchend","touchcancel"].forEach(t=>{
         el.addEventListener(t, e => { e.preventDefault(); }, { passive:false });
       });
@@ -122,7 +112,12 @@
       document.addEventListener("wheel", e => e.preventDefault(), { passive:false });
     })();
 
-    // ---- Load Unity and drive loader ----
+    // Load Unity + loader progress
+    const canvas = document.getElementById("unity-canvas");
+    const loader = document.getElementById("loader");
+    const fill   = document.getElementById("fill");
+    const pct    = document.getElementById("pct");
+
     const s=document.createElement("script");
     s.src=loaderUrl;
     s.onload=() => {
