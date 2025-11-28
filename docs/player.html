@@ -4,31 +4,25 @@
   <meta charset="utf-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <meta name="viewport"
-        content="width=device-width, initial-scale=1, maximum-scale=1,
-                 user-scalable=no, viewport-fit=cover">
+        content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Unity Web Player | My project</title>
+
   <link rel="shortcut icon" href="TemplateData/favicon.ico">
   <link rel="stylesheet" href="TemplateData/style.css">
+
   <style>
-    html,body{height:100%;margin:0;overflow:hidden;background:#000;overscroll-behavior:none;}
-    #stage{position:fixed;inset:0;display:grid;place-items:center;
-           padding: env(safe-area-inset-top) env(safe-area-inset-right)
-                    env(safe-area-inset-bottom) env(safe-area-inset-left);}
-    .fit16x9{width:min(100svw,calc(100svh*16/9));height:min(100svh,calc(100svw*9/16));}
-    #unity-canvas{width:100% !important;height:100% !important;display:block;background:#231f20;}
+    html,body { height:100%; margin:0; overflow:hidden; background:#000; }
+    #stage { position:fixed; inset:0; display:grid; place-items:center;
+             padding: env(safe-area-inset-top) env(safe-area-inset-right)
+                      env(safe-area-inset-bottom) env(safe-area-inset-left); }
+    .fit16x9 {
+      width:  min(100dvw, calc(100dvh * 16/9));
+      height: min(100dvh, calc(100dvw * 9/16));
+    }
+    #unity-canvas { width:100% !important; height:100% !important; display:block; background:#231f20; }
 
-    /* Loader */
-    #loader{position:fixed;inset:0;display:grid;place-items:center;background:#0b0b0b;z-index:9999;}
-    .card{width:min(90vw,360px);padding:16px 18px;text-align:center;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#e6e6e6;}
-    .bar{height:10px;background:#1e1e1e;border-radius:999px;overflow:hidden}
-    .fill{height:100%;width:0%}
-    .t{margin:0 0 10px 0;font-size:14px;opacity:.9}
-    .p{margin-top:8px;font-size:12px;opacity:.8}
-    .ver{margin-top:10px;font-size:12px;opacity:.7}
-
-    /* Fullscreen button */
-    #fsBtn{
+    /* Fullscreen toggle */
+    #fsToggle{
       position:fixed; right:12px; bottom:12px; z-index:50;
       padding:10px 14px; border:0; border-radius:12px; background:#1e1e1e; color:#fff;
       font:600 14px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; opacity:.95;
@@ -42,36 +36,57 @@
     </div>
   </div>
 
-  <div id="loader">
-    <div class="card">
-      <p class="t">Loading…</p>
-      <div class="bar"><div class="fill" id="fill" style="background:linear-gradient(90deg,#4dc0ff,#2eaadc)"></div></div>
-      <div class="p" id="pct">0%</div>
-      <div class="ver" id="ver">version</div>
+  <!-- Unity's default loader UI -->
+  <div id="unity-loading-bar">
+    <div id="unity-logo"></div>
+    <div id="unity-progress-bar-empty">
+      <div id="unity-progress-bar-full"></div>
     </div>
   </div>
+  <div id="unity-warning"></div>
+  <div id="unity-footer">
+    <div id="unity-logo-title-footer"></div>
+    <div id="unity-fullscreen-button"></div>
+    <div id="unity-build-title">My project</div>
+  </div>
 
-  <button id="fsBtn" type="button">Fullscreen</button>
+  <!-- Fullscreen toggle button -->
+  <button id="fsToggle" type="button" aria-label="Toggle fullscreen">Enter Fullscreen</button>
 
   <script>
+    // ---- Fullscreen toggle (works on iOS because this page is top-level there) ----
+    (function setupFsToggle(){
+      const btn = document.getElementById('fsToggle');
+
+      function inFS() {
+        return !!(document.fullscreenElement || document.webkitFullscreenElement);
+      }
+      async function enterFS() {
+        const el = document.documentElement; // or document.getElementById('unity-canvas')
+        try {
+          if (el.requestFullscreen) await el.requestFullscreen();
+          else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+        } catch(e) {}
+      }
+      async function exitFS() {
+        try {
+          if (document.exitFullscreen) await document.exitFullscreen();
+          else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
+        } catch(e) {}
+      }
+      function updateBtn(){ btn.textContent = inFS() ? 'Exit Fullscreen' : 'Enter Fullscreen'; }
+
+      btn.addEventListener('click', () => inFS() ? exitFS() : enterFS());
+      document.addEventListener('fullscreenchange', updateBtn);
+      document.addEventListener('webkitfullscreenchange', updateBtn);
+      updateBtn();
+    })();
+
+    // ---- Unity bootstrap (names must match your Build folder) ----
     const buildUrl  = "Build";
-    const base      = "Medi"; // ← keep equal to your Unity Product Name
+    const base      = "Medi"; // keep equal to your Unity Product Name
     const loaderUrl = `${buildUrl}/${base}.loader.js`;
 
-    const canvas = document.getElementById("unity-canvas");
-    const loader = document.getElementById("loader");
-    const fill   = document.getElementById("fill");
-    const pct    = document.getElementById("pct");
-    const verEl  = document.getElementById("ver");
-    const fsBtn  = document.getElementById("fsBtn");
-
-    const ua       = navigator.userAgent;
-    const isIOS    = /iP(hone|ad|od)/.test(ua);
-    const isAndroid= /Android/i.test(ua);
-    const qs       = new URLSearchParams(location.search);
-    const APP_TAG  = qs.get('v') || 'dev';
-
-    // Unity config with mobile caps
     const config = {
       arguments: [],
       dataUrl:       `${buildUrl}/${base}.data`,
@@ -80,44 +95,32 @@
       streamingAssetsUrl: "StreamingAssets",
       companyName: "DefaultCompany",
       productName: "My project",
-      productVersion: "0.1.0",
-      matchWebGLToCanvasSize: true,
-      webglContextAttributes: {
-        antialias: false,
-        preserveDrawingBuffer: false,
-        powerPreference: "high-performance"
-      }
+      productVersion: "0.1.0"
+      // No DPR overrides (keeps your earlier non-laggy iOS behavior)
     };
-    if (isIOS || isAndroid) {
-      const targetDPR = isIOS ? 0.75 : 1.0; // tweak if needed
-      config.devicePixelRatio = Math.min(targetDPR, window.devicePixelRatio || 1);
+
+    function unityShowBanner(msg, type) {
+      const warningBanner = document.querySelector("#unity-warning");
+      function update() { warningBanner.style.display = warningBanner.children.length ? 'block' : 'none'; }
+      const div = document.createElement('div'); div.innerHTML = msg; warningBanner.appendChild(div);
+      if (type === 'error') div.style = 'background:red;padding:10px;';
+      else { if (type === 'warning') div.style = 'background:yellow;padding:10px;'; setTimeout(() => { warningBanner.removeChild(div); update(); }, 5000); }
+      update();
     }
 
-    // Show version info on loader (deploy tag + Unity productVersion)
-    verEl.textContent = `version: ${APP_TAG} • unity: ${config.productVersion}`;
+    document.querySelector("#unity-loading-bar").style.display = "block";
 
-    // Fullscreen (this page is top-level on iOS due to index.html redirect)
-    fsBtn.addEventListener("click", async () => {
-      const el = document.documentElement;
-      if (el.requestFullscreen) { try { await el.requestFullscreen(); } catch(_){} }
-    });
-
-    // Load Unity with progress → hide loader on ready
-    const s=document.createElement("script");
-    s.src=loaderUrl;
-    s.onload=() => {
-      createUnityInstance(canvas, config, (progress)=>{
-        const p=Math.round(progress*100);
-        fill.style.width=p+"%";
-        pct.textContent=p+"%";
-      }).then(()=>{
-        loader.style.display="none";
-      }).catch((e)=>{
-        loader.style.display="none";
-        alert(e);
-      });
+    const script = document.createElement("script");
+    script.src = loaderUrl;
+    script.onload = () => {
+      createUnityInstance(document.querySelector("#unity-canvas"), { ...config, showBanner: unityShowBanner }, (progress) => {
+        document.querySelector("#unity-progress-bar-full").style.width = (progress * 100) + "%";
+      }).then((unityInstance) => {
+        document.querySelector("#unity-loading-bar").style.display = "none";
+        document.querySelector("#unity-fullscreen-button").onclick = () => unityInstance.SetFullscreen(1);
+      }).catch((message) => { alert(message); });
     };
-    document.body.appendChild(s);
+    document.body.appendChild(script);
   </script>
 </body>
 </html>

@@ -5,30 +5,24 @@
   <meta name="viewport"
         content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Game</title>
+
   <style>
-    html,body { margin:0; height:100%; background:#000; overflow:hidden; }
-    .page { position:fixed; inset:0; display:grid; place-items:center;
-            padding: env(safe-area-inset-top) env(safe-area-inset-right)
-                     env(safe-area-inset-bottom) env(safe-area-inset-left); }
-    .contain { width:min(100svw, calc(100svh*16/9));
-               height:min(100svh, calc(100svw*9/16)); }
+    html,body { margin:0; height:100%; overflow:hidden; background:#000; }
+    .page { position:fixed; inset:0; display:grid; place-items:center; }
+    .contain {
+      width:  min(100dvw, calc(100dvh * 16/9));
+      height: min(100dvh, calc(100dvw * 9/16));
+      overflow:hidden;
+    }
     iframe { width:100%; height:100%; border:0; display:block; }
   </style>
-  <script>
-    // === UPDATE THIS EACH DEPLOY (commit hash, date, build number, etc.) ===
-    const BUILD_TAG = "r13-2025-11-28"; // e.g., use your short git SHA
 
-    // If iOS (Safari/Chrome on iOS), skip iframe -> go straight to player.html
+  <script>
+    // iOS must avoid iframe for reliable fullscreen
     (function () {
-      const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
-      if (isIOS) {
-        location.replace('./player.html?v=' + encodeURIComponent(BUILD_TAG));
-      } else {
-        // For Android/Desktop set iframe src with version param
-        window.addEventListener('DOMContentLoaded', () => {
-          document.getElementById('game').src =
-            './player.html?v=' + encodeURIComponent(BUILD_TAG);
-        });
+      if (/iP(hone|ad|od)/.test(navigator.userAgent)) {
+        // cache-bust once if needed by changing the value after v=
+        location.replace('./player.html?iosfs=1&v=fs1');
       }
     })();
   </script>
@@ -36,7 +30,8 @@
 <body>
   <div class="page">
     <div class="contain">
-      <iframe id="game" allow="autoplay; fullscreen" allowfullscreen></iframe>
+      <!-- Android/Desktop still use iframe -->
+      <iframe src="./player.html?v=fs1" allow="autoplay; fullscreen" allowfullscreen></iframe>
     </div>
   </div>
 </body>
