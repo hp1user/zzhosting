@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <meta name="viewport"
-        content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+        content="width=device-width, initial-scale=1, maximum-scale=1,
+                 user-scalable=no, viewport-fit=cover">
   <title>Unity Web Player | My project</title>
   <link rel="shortcut icon" href="TemplateData/favicon.ico">
   <link rel="stylesheet" href="TemplateData/style.css">
@@ -24,11 +25,14 @@
     .fill{height:100%;width:0%}
     .t{margin:0 0 10px 0;font-size:14px;opacity:.9}
     .p{margin-top:8px;font-size:12px;opacity:.8}
+    .ver{margin-top:10px;font-size:12px;opacity:.7}
 
-    /* Mobile fullscreen button (Android/desktop only; iOS handled by parent) */
-    #fsBtn{ position:fixed; right:12px; bottom:12px; z-index:50;
+    /* Fullscreen button */
+    #fsBtn{
+      position:fixed; right:12px; bottom:12px; z-index:50;
       padding:10px 14px; border:0; border-radius:12px; background:#1e1e1e; color:#fff;
-      font:600 14px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; opacity:.95; }
+      font:600 14px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; opacity:.95;
+    }
   </style>
 </head>
 <body>
@@ -43,6 +47,7 @@
       <p class="t">Loading…</p>
       <div class="bar"><div class="fill" id="fill" style="background:linear-gradient(90deg,#4dc0ff,#2eaadc)"></div></div>
       <div class="p" id="pct">0%</div>
+      <div class="ver" id="ver">version</div>
     </div>
   </div>
 
@@ -50,18 +55,23 @@
 
   <script>
     const buildUrl  = "Build";
-    const base      = "Medi"; // keep equal to Unity Product Name
+    const base      = "Medi"; // ← keep equal to your Unity Product Name
     const loaderUrl = `${buildUrl}/${base}.loader.js`;
 
     const canvas = document.getElementById("unity-canvas");
     const loader = document.getElementById("loader");
     const fill   = document.getElementById("fill");
     const pct    = document.getElementById("pct");
+    const verEl  = document.getElementById("ver");
     const fsBtn  = document.getElementById("fsBtn");
-    const isIOS  = /iP(hone|ad|od)/.test(navigator.userAgent);
 
-    // Lower render resolution on phones
-    const isMobile = isIOS || /Android/i.test(navigator.userAgent);
+    const ua       = navigator.userAgent;
+    const isIOS    = /iP(hone|ad|od)/.test(ua);
+    const isAndroid= /Android/i.test(ua);
+    const qs       = new URLSearchParams(location.search);
+    const APP_TAG  = qs.get('v') || 'dev';
+
+    // Unity config with mobile caps
     const config = {
       arguments: [],
       dataUrl:       `${buildUrl}/${base}.data`,
@@ -71,21 +81,26 @@
       companyName: "DefaultCompany",
       productName: "My project",
       productVersion: "0.1.0",
-      matchWebGLToCanvasSize: true
+      matchWebGLToCanvasSize: true,
+      webglContextAttributes: {
+        antialias: false,
+        preserveDrawingBuffer: false,
+        powerPreference: "high-performance"
+      }
     };
-    if (isMobile) config.devicePixelRatio = Math.min(1, window.devicePixelRatio || 1);
+    if (isIOS || isAndroid) {
+      const targetDPR = isIOS ? 0.75 : 1.0; // tweak if needed
+      config.devicePixelRatio = Math.min(targetDPR, window.devicePixelRatio || 1);
+    }
 
-    // Fullscreen: top-page must do it on iOS
-    fsBtn.style.display = isIOS ? "none" : "block";
+    // Show version info on loader (deploy tag + Unity productVersion)
+    verEl.textContent = `version: ${APP_TAG} • unity: ${config.productVersion}`;
+
+    // Fullscreen (this page is top-level on iOS due to index.html redirect)
     fsBtn.addEventListener("click", async () => {
       const el = document.documentElement;
       if (el.requestFullscreen) { try { await el.requestFullscreen(); } catch(_){} }
     });
-
-    // Also expose a tap target inside the canvas to ask parent to fullscreen (iOS)
-    document.addEventListener("click", () => {
-      if (isIOS) window.parent.postMessage("enter-fullscreen", "*");
-    }, { once:true }); // first user gesture is enough
 
     // Load Unity with progress → hide loader on ready
     const s=document.createElement("script");
