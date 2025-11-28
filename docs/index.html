@@ -2,21 +2,30 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Game</title>
   <style>
     html,body { margin:0; height:100%; overflow:hidden; background:#000; }
     .page { position:fixed; inset:0; display:grid; place-items:center; }
-    /* contain = full game visible, letterbox if needed */
     .contain { width:min(100dvw, calc(100dvh*16/9));
                height:min(100dvh, calc(100dvw*9/16)); overflow:hidden; }
     iframe { width:100%; height:100%; border:0; display:block; }
   </style>
+
+  <!-- iOS: avoid iframe so fullscreen works -->
+  <script>
+    (function () {
+      if (/iP(hone|ad|od)/.test(navigator.userAgent)) {
+        location.replace('./player.html?iosfs=1&v=fs2');
+      }
+    })();
+  </script>
 </head>
 <body>
   <div class="page">
     <div class="contain">
-      <iframe src="./player.html" allow="autoplay; fullscreen"></iframe>
+      <!-- Android / Desktop continue in iframe -->
+      <iframe src="./player.html?v=fs2" allow="autoplay; fullscreen" allowfullscreen></iframe>
     </div>
   </div>
 </body>
