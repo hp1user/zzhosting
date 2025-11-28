@@ -2,21 +2,52 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Game</title>
   <style>
-    html,body { margin:0; height:100%; overflow:hidden; background:#000; }
-    .page { position:fixed; inset:0; display:grid; place-items:center; }
-    .contain { width:min(100dvw, calc(100dvh*16/9));
-               height:min(100dvh, calc(100dvw*9/16)); overflow:hidden; }
+    html,body { margin:0; height:100%; background:#000; overflow:hidden; }
+    .page { position:fixed; inset:0; display:grid; place-items:center;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right)
+                     env(safe-area-inset-bottom) env(safe-area-inset-left); }
+    .contain { width:min(100svw, calc(100svh*16/9));
+               height:min(100svh, calc(100svw*9/16)); }
     iframe { width:100%; height:100%; border:0; display:block; }
+    /* iOS fullscreen button (hidden on desktop/Android) */
+    #fsBtnIOS {
+      position:fixed; right:12px; bottom:12px; z-index:50; display:none;
+      padding:10px 14px; border:0; border-radius:12px; background:#1e1e1e; color:#fff;
+      font:600 14px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; opacity:.95;
+    }
   </style>
 </head>
 <body>
   <div class="page">
     <div class="contain">
-      <iframe src="./player.html?v=10" allow="autoplay; fullscreen" allowfullscreen></iframe>
+      <iframe id="game" src="./player.html?v=11"
+              allow="autoplay; fullscreen" allowfullscreen></iframe>
     </div>
   </div>
+
+  <button id="fsBtnIOS" type="button">Fullscreen</button>
+
+  <script>
+    const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
+
+    // Show a *top-level* fullscreen button on iOS (top doc must request FS)
+    if (isIOS) document.getElementById('fsBtnIOS').style.display = 'block';
+    document.getElementById('fsBtnIOS').onclick = async () => {
+      const el = document.documentElement;
+      if (el.requestFullscreen) { try { await el.requestFullscreen(); } catch(_){} }
+    };
+
+    // Receive requests from the iframe and perform fullscreen here (iOS-safe)
+    window.addEventListener('message', async (e) => {
+      if (e.data === 'enter-fullscreen') {
+        const el = document.documentElement;
+        if (el.requestFullscreen) { try { await el.requestFullscreen(); } catch(_){} }
+      }
+    });
+  </script>
 </body>
 </html>
