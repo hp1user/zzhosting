@@ -3,13 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="viewport"
+        content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <title>Unity Web Player | My project</title>
   <link rel="shortcut icon" href="TemplateData/favicon.ico">
   <link rel="stylesheet" href="TemplateData/style.css">
   <style>
     html,body{height:100%;margin:0;overflow:hidden;background:#000;overscroll-behavior:none;touch-action:none;}
-    #stage{position:fixed;inset:0;display:grid;place-items:center;touch-action:none;}
+    #stage{position:fixed;inset:0;display:grid;place-items:center;touch-action:none;
+           padding: env(safe-area-inset-top) env(safe-area-inset-right)
+                    env(safe-area-inset-bottom) env(safe-area-inset-left);}
     .fit16x9{width:min(100dvw,calc(100dvh*16/9));height:min(100dvh,calc(100dvw*9/16));touch-action:none;}
     #unity-canvas{
       width:100% !important;height:100% !important;display:block;background:#231f20;
@@ -17,7 +20,7 @@
     }
     *{-webkit-tap-highlight-color:transparent}
 
-    /* Loader overlay */
+    /* Loader (your existing style) */
     #loader{position:fixed;inset:0;display:grid;place-items:center;background:#0b0b0b;z-index:9999;}
     .card{width:min(90vw,360px);padding:16px 18px;text-align:center;
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#e6e6e6;}
@@ -26,13 +29,12 @@
     .t{margin:0 0 10px 0;font-size:14px;opacity:.9}
     .p{margin-top:8px;font-size:12px;opacity:.8}
 
-    /* Mobile fullscreen button (hidden on desktop) */
+    /* Fullscreen toggle */
     #fsBtn{
-      position:fixed;right:12px;bottom:12px;z-index:50;
-      padding:10px 14px;border:0;border-radius:12px;background:#1e1e1e;color:#fff;
-      font:600 14px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;opacity:.95;
+      position:fixed; right:12px; bottom:12px; z-index:50;
+      padding:10px 14px; border:0; border-radius:12px; background:#1e1e1e; color:#fff;
+      font:600 14px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; opacity:.95;
     }
-    @media (pointer:fine){ #fsBtn{ display:none; } }
   </style>
 </head>
 <body>
@@ -42,7 +44,7 @@
     </div>
   </div>
 
-  <!-- Simple loader -->
+  <!-- Loader -->
   <div id="loader">
     <div class="card">
       <p class="t">Loading…</p>
@@ -51,51 +53,62 @@
     </div>
   </div>
 
-  <!-- Mobile Fullscreen -->
-  <button id="fsBtn" type="button">Fullscreen</button>
+  <!-- Fullscreen -->
+  <button id="fsBtn" type="button">Enter Fullscreen</button>
 
   <script>
-    // Build names: keep base equal to your Product Name from Unity
-    const buildUrl  = "Build";
-    const base      = "Medi";
-    const loaderUrl = `${buildUrl}/${base}.loader.js`;
+    // Hide the Fullscreen button on iOS (since it does not work)
+    (function(){
+      const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
+      if (isIOS) {
+        const btn = document.getElementById('fsBtn');
+        if(btn) btn.style.display = 'none';
+      }
+    })();
+
+    // Fullscreen toggle (works in top page; in iframe it works on Android/Desktop)
+    (function setupFullscreen(){
+      const btn = document.getElementById('fsBtn');
+      const inFS = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+      async function enterFS(){
+        const el = document.documentElement; // or canvas
+        try{
+          if (el.requestFullscreen) await el.requestFullscreen();
+          else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+        }catch(e){}
+      }
+      async function exitFS(){
+        try{
+          if (document.exitFullscreen) await document.exitFullscreen();
+          else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
+        }catch(e){}
+      }
+      function update(){ btn.textContent = inFS() ? 'Exit Fullscreen' : 'Enter Fullscreen'; }
+      btn.addEventListener('click', ()=> inFS()? exitFS(): enterFS());
+      document.addEventListener('fullscreenchange', update);
+      document.addEventListener('webkitfullscreenchange', update);
+      update();
+    })();
 
     // Unity config
+    const buildUrl  = "Build";
+    const loaderUrl = buildUrl + "/Medi.loader.js";
     const config = {
       arguments: [],
-      dataUrl:       `${buildUrl}/${base}.data`,
-      frameworkUrl:  `${buildUrl}/${base}.framework.js`,
-      codeUrl:       `${buildUrl}/${base}.wasm`,
+      dataUrl:      buildUrl + "/Medi.data",
+      frameworkUrl: buildUrl + "/Medi.framework.js",
+      codeUrl:      buildUrl + "/Medi.wasm",
       streamingAssetsUrl: "StreamingAssets",
       companyName: "DefaultCompany",
       productName: "My project",
       productVersion: "0.1.0",
       matchWebGLToCanvasSize: true
+      // No DPR overrides; preserves your earlier iOS performance
     };
 
-    const canvas = document.getElementById("unity-canvas");
-    const loader = document.getElementById("loader");
-    const fill   = document.getElementById("fill");
-    const pct    = document.getElementById("pct");
-    const fsBtn  = document.getElementById("fsBtn");
-
-    // Enforce viewport (some hosts inject their own)
-    (function enforceViewport(){
-      const desired="width=device-width,height=device-height,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover";
-      let m=document.querySelector('meta[name="viewport"]');
-      if(!m){m=document.createElement("meta");m.name="viewport";document.head.appendChild(m);}
-      m.setAttribute("content",desired);
-    })();
-
-    // Lower render resolution on phones to save perf/heat
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) {
-      config.devicePixelRatio = Math.min(1, window.devicePixelRatio || 1); // set to 0.75 if you need more speed
-    }
-
-    // Pass touches to Unity (avoid browser gestures)
+    // Keep input focused on canvas; prevent page gestures interfering
     (function passTouchesToUnity(){
-      const el = canvas;
+      const el = document.getElementById("unity-canvas");
       ["touchstart","touchmove","touchend","touchcancel"].forEach(t=>{
         el.addEventListener(t, e => { e.preventDefault(); }, { passive:false });
       });
@@ -108,14 +121,12 @@
       document.addEventListener("wheel", e => e.preventDefault(), { passive:false });
     })();
 
-    // Fullscreen (must be user-initiated on mobile)
-    async function enterFullscreen(){
-      const el = document.documentElement; // or canvas
-      if (el.requestFullscreen) await el.requestFullscreen();
-    }
-    fsBtn.addEventListener("click", enterFullscreen);
+    // Load Unity + loader progress
+    const canvas = document.getElementById("unity-canvas");
+    const loader = document.getElementById("loader");
+    const fill   = document.getElementById("fill");
+    const pct    = document.getElementById("pct");
 
-    // Load Unity + hook progress → hide loader when ready
     const s=document.createElement("script");
     s.src=loaderUrl;
     s.onload=() => {
